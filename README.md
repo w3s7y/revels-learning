@@ -11,8 +11,7 @@ Our data was collected manually through physical measaurement of 10 bags of reve
 1. Write bag number on face of bag (bag_id)
 1. Open the bag & for each revel in the bag
   1. Measure its mass (in grams)
-  1. Measure its mass in water (in grams)
-  1. Measure its
+  1. Measure its density (in g/cm3)
   1. As step two requires it to get wet, dry it off.
   1. Measure its height
   1. Measure its width
