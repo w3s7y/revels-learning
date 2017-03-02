@@ -4,8 +4,35 @@ The aim of this project is primarily for personal learning, but hosted open-sour
 a few physical parameters (mass, height, width, etc).  
 
 ## Data collection method
-Data was collected manually through physical measaurement of 10 bags of revels chocolates (1.2KG). This can then be randomly split into training and vali
-dation data.  Before new data can be collected and used to test the machine learning model. 
+Our data was collected manually through physical measaurement of 10 bags of revels chocolates (approx 1.2KG). The general method was as follows. 
+
+1. Grab a bag
+1. Record bag data into database (total mass, price, shop bought)
+1. Write bag number on face of bag (bag_id)
+1. Repeat for all ten bags
+1. Open a bag
+1. For each revel in the bag
+  1. Measure it's mass (in grams)
+  1. Measure it's density (in g/cm3)
+  1. As step two requires it to get wet, dry it off (we would like to eat these later!)
+  1. Measure it's height
+  1. Measure it's width
+  1. Measure it's depth
+  1. Record data into database along with it's bag number
+  1. Place sample into zip lock bag
+  1. Repeat above steps for every sample in the bag
+1. Eat the chocolate
+
+### Equipment used for data collection
+* Accurate Scales (0.01g resolution)
+* Vernier Calipers (0.02mm resolution)
+* Distilled Water - For measuring specific gravity and therefore density
+* Cotton Thread (for suspending sample in liquid)
+* One penny piece (used as a sinker for samples that floated (the malteasers))
+* Nitrile gloves for handling chocolates
+
+### The Maths
+Working out the density of a solid using archimedes principle requires using a bit of maths, all we did was follow [this excellent educational lab sheet](https://www.unr.edu/Documents/science/physics/labs/151/09_Archimedes_Principle.pdf).
 
 ## Database schema
 The database has 4 tables, shops, bags, types and finally data.  With the following data types and relations:
