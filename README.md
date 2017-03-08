@@ -32,13 +32,16 @@ Our data was collected manually through physical measaurement of 10 bags of reve
 * Nitrile gloves for handling chocolates
 
 ### The Maths
-Working out the density of a solid using archimedes principle requires using a bit of maths, all we did was follow [this excellent educational lab sheet](https://www.unr.edu/Documents/science/physics/labs/151/09_Archimedes_Principle.pdf).
+Working out the density of a solid using archimedes principle requires using a 
+bit of maths, all we did was follow [this excellent educational lab sheet](https://www.unr.edu/Documents/science/physics/labs/151/09_Archimedes_Principle.pdf).
 
 ## Database schema
-The database has 4 tables, shops, bags, types and finally data.  With the following data types and relations:
+The database has 4 tables, shops, bags, types and finally data.  
+With the following data types and relations:
 
 ### Shops
-This table provides us with the ability to trace where specific samples originated from (i.e. the shop where they were bought).
+This table provides us with the ability to trace where specific samples 
+originated from (i.e. the shop where they were bought).
 
 Column Name | Type | Foreign Key
 ------------|------|------------
@@ -50,7 +53,8 @@ address_3 | text | none
 postcode | text | none
 
 ### Bags
-This table provides us with information specific to each bag, specifically it's total weight and price.
+This table provides us with information specific to each bag, 
+specifically it's total weight and price.
 
 Column Name | Type | Foreign Key
 ------------|------|------------
@@ -82,4 +86,7 @@ depth | real | none
 
 
 ## Running the project
-The project was initally completed using cloud computing (Amazon Web Services) resources, it is the aim of the project however to provide some docker images to allow the casual user to clone and run this project themselves on any machine that has docker installed. 
+The project was initally completed using cloud computing (Amazon Web Services) 
+resources, it is the aim of the project however to provide some docker images 
+to allow the casual user to clone and run this project themselves on any 
+machine that has docker installed. 
