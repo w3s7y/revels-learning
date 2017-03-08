@@ -9,19 +9,17 @@ Our data was collected manually through physical measaurement of 10 bags of reve
 1. Grab a bag
 1. Record bag data into database (total mass, price, shop bought)
 1. Write bag number on face of bag (bag_id)
-1. Repeat for all ten bags
-1. Open a bag
-1. For each revel in the bag
-  1. Measure it's mass (in grams)
-  1. Measure it's density (in g/cm3)
-  1. As step two requires it to get wet, dry it off (we would like to eat these later!)
-  1. Measure it's height
-  1. Measure it's width
-  1. Measure it's depth
+1. Open the bag & for each revel in the bag
+  1. Measure its mass (in grams)
+  1. Measure its density (in g/cm3)
+  1. As step two requires it to get wet, dry it off.
+  1. Measure its height
+  1. Measure its width
+  1. Measure its depth
+  1. eat the sample to confirm it's type
   1. Record data into database along with it's bag number
-  1. Place sample into zip lock bag
   1. Repeat above steps for every sample in the bag
-1. Eat the chocolate
+1. Repeat for all ten bags.
 
 ### Equipment used for data collection
 * Accurate Scales (0.01g resolution)
@@ -29,7 +27,6 @@ Our data was collected manually through physical measaurement of 10 bags of reve
 * Distilled Water - For measuring specific gravity and therefore density
 * Cotton Thread (for suspending sample in liquid)
 * One penny piece (used as a sinker for samples that floated (the malteasers))
-* Nitrile gloves for handling chocolates
 
 ### The Maths
 Working out the density of a solid using archimedes principle requires using a 
