@@ -23,16 +23,34 @@ class dbconnection:
         '@' + host + ':' + port + '/' + dbname)
         self.dbconn = self.engine.connect()
         
-    def getConnection(self):
+    def getconnection(self):
+        '''Returns the raw sqlalchemy datbase connection.'''
         return self.dbconn
 
-    def writeShop(self, shop_name, address1, address2, address3, postcode):
+    def writeshop(self, shop_name, address1, address2, address3, postcode):
+        '''Write a shop to the DB.'''
         pass
     
-    def writeBag(self, shop_id, mass, price):
+    def writebag(self, shop_id, mass, price):
         pass
     
-    def writeSample(self, bag_id, type_id, mass, density, height, width, depth):
+    def writesample(self, bag_id, type_id, mass, density, height, width, depth):
+        pass
+    
+    def getshops(self):
+        '''Returns a pandas DataFrame of the shops table.'''
+        pass
+    
+    def getbags(self):
+        '''Returns a pandas DataFrame of the bags table.'''
+        pass
+    
+    def gettypes(self):
+        '''Returns a pandas DataFrame of the types table.'''
+        pass
+    
+    def getsamples(self):
+        '''Returns a pandas DataFrame of the data table.'''
         pass
     
 class cli:
@@ -52,13 +70,28 @@ For additional help on each function, use help <function name>."""
         print(self.help)
     
     def doAddShop(self, options):
-        shop_help = '''Adds a shop to the database.
+        shop_help = '''
+        [shop name] [address 1] [address 2] [address 3] [county] [postcode]
         '''
         if options[0] == help:
             print(shop_help)
+            return
+            
+        if len(options) == 6:
+            self.dbc.writeshop(options[0], options[1], options[2], 
+                               options[3], options[4], options[5])
     
     def doAddBag(self, options):
-        pass
+        bag_help = '''
+        [shop id] [mass] [price]
+        '''
+        if len(options) == 1:
+            if options[0] == 'help':
+                print(bag_help)
+                return
+            
+        if len(options) == 3:
+            self.dbc.writebag(options[0], options[1], options[2])
     
     def doAddSample(self, options):
         pass
