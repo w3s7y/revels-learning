@@ -32,26 +32,32 @@ class dbconnection:
         pass
     
     def writebag(self, shop_id, mass, price):
+        '''Write a bag to the DB.'''
         pass
     
     def writesample(self, bag_id, type_id, mass, density, height, width, depth):
+        '''Write a row of sample data to the DB.'''
         pass
     
     def getshops(self):
         '''Returns a pandas DataFrame of the shops table.'''
-        pass
+        return pandas.read_sql_table('shops', self.dbconn,
+                                     schema='revels')
     
     def getbags(self):
         '''Returns a pandas DataFrame of the bags table.'''
-        pass
+        return pandas.read_sql_table('bags', self.dbconn,
+                                     schema='revels')
     
     def gettypes(self):
         '''Returns a pandas DataFrame of the types table.'''
-        pass
+        return pandas.read_sql_table('types', self.dbconn, 
+                                     schema='revels')
     
     def getsamples(self):
         '''Returns a pandas DataFrame of the data table.'''
-        pass
+        return pandas.read_sql_table('data', self.dbconn,
+                                     schema='revels')
     
 class cli:
     """Command line interface for entering data"""
