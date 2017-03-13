@@ -32,7 +32,61 @@ Our data was collected manually through physical measaurement of 10 bags of reve
 Working out the density of a solid using archimedes principle requires using a 
 bit of maths, all we did was follow [this excellent educational lab sheet](https://www.unr.edu/Documents/science/physics/labs/151/09_Archimedes_Principle.pdf).
 
+## Running the project
+We aim to make this project trivial to run yourself, to this end we have 
+prepared a couple of docker images in addition to this project which should
+make it easy for anyone to run this project. 
+
+### Install pre-requisite software
+* Docker (we used 17.03.00-ea) but anything after this will *probably* be fine
+* Docker-compose (1.12.0)
+
+I would have put git in this list, however it is not required but more a nice 
+to have as you can download the zip of this project directly from github. 
+
+### Get the project code
+Either use git to clone this project (as mentioned above) or just download it 
+to a folder of your choosing and unzip it. 
+
+### Start the environment
+In the root of the folder there is a ```docker-compose.yaml``` this will create
+a docker network and 2 containers in that network.  A single postgres database
+instance and also a python science container. 
+                                    
+## Project structure
+The project files are split up into the following folders
+
+#### /psql
+Contains the Postgresql schema creation file.
+
+#### /pyt
+Contains the main python machine learning and database IO modules.
+This is where the bulk of the project code lives. 
+
+#### /unittests
+Contains pytest modules for testing the code in pyt folder. 
+
+#### secrets_template.py
+This file needs to be renamed to ```secrets.py``` in order for the pytest to
+pick up the correct database connection details in order to test the db
+connection code and also used by the machine learning code itself to pick up 
+the database connection details. 
+
+## Execution environment
+I have created a docker image which has all of the necessary modules and 
+programs installed to run this project.  This can be found on [docker hub](https://hub.docker.com/w3s7y/scientific-python)
+You may also pull it directly into your local repo with 
+```docker pull benwest/scientific-python```
+
+## Unit testing the project
+Unit tests are written in pytest which making unit testing the project trivial.
+Simply enter the root directory of the project and execute ```pytest -r p```
+the ```-r p``` isn't even required, just gives info on each test executed.
+                              
 ## Database schema
+In order to easily understand the data structures involved, I include the 
+database structure (schema) in the README for completeness...
+                   
 The database has 4 tables, shops, bags, types and finally data.  
 With the following data types and relations:
 
@@ -81,9 +135,3 @@ height | real | none
 width | real | none 
 depth | real | none
 
-
-## Running the project
-The project was initally completed using cloud computing (Amazon Web Services) 
-resources, it is the aim of the project however to provide some docker images 
-to allow the casual user to clone and run this project themselves on any 
-machine that has docker installed. 

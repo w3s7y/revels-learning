@@ -18,6 +18,9 @@ insert into shops (shop_name, address_1, address_2, address_3, postcode)
   values ('Tesco Express','Saffron Square','Wellsley Road','Croydon','CR9 2BY');
 insert into shops (shop_name, address_1, address_2, address_3, postcode)
   values ('Spar','93 - 95 High Street','Porthmadog','Wales','LL49 9EU');
+insert into shops (shop_name, address_1, address_2, address_3, postcode)
+  values ('Riverside Shopping Centre', 'Pride Hill Centre',
+          'Shrewsbury', 'Shropshire', 'SY1 1BU')
 -- insert into shops (shop_name, address_1, address_2, address_3, postcode)
   -- values ('The cooperative','','','Wem','SY4 5XX');
 
@@ -29,6 +32,18 @@ create table bags (
   total_mass  real not null,
   price       real not null
 );
+
+
+insert into bags (shop_bought, total_mass, price)
+  values (1,112,1);
+insert into bags (shop_bought, total_mass, price)
+  values (2,112,1);
+insert into bags (shop_bought, total_mass, price)
+  values (2,112,1);
+insert into bags (shop_bought, total_mass, price)
+  values (3,112,1);
+
+
 
 -- Types table
 create table types (
@@ -48,10 +63,15 @@ insert into types (type_name) values ('Galaxy Counter');
 create table data (
   id          serial primary key,
   bag_id      integer not null references bags(id),
-  revel_type  integer not null references types(id),
+  type_id     integer not null references types(id),
   mass        real not null,  -- Expressed in grams.
   density     real not null,  -- Expressed in g/cm3.
   height      real not null,  -- in millimeters.
   width       real not null,  -- in millimeters.
   depth       real not null  -- in millimeters.
 );
+
+-- create a bags view with the shop it was bought at as well.
+create view bags_detail as
+select bags.id, total_mass, price, shop_name, address_1, address_2, address_3,
+postcode from bags join shops on bags.shop_bought=shops.id;
