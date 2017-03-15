@@ -86,49 +86,84 @@ class connection:
 
 class cli:
     """Command line interface for entering data"""
-    help = """Available commands:
+    main_help = """Available functions:
         help      = this help text.
         addshop   = add a shop to the db.
         addbag    = add a bag to the db.
         addsample = add a individual sample to the db.
+        listtypes = lists revels typs and their database IDs.
+        listshops = lists shops and their database IDs.
+        listbags  = lists bags and their database IDs.
         quit      = Not sure what this does, undocumented...
 For additional help on each function, use help <function name>."""
+
+    sample_help = '''
+        addsample [bag id] [type id] [mass] [density] [height] [width] [depth]
+        '''
+
+    shop_help = '''
+        addshop [shop_name] [address 1] [address 2] [address 3] [postcode]
+        '''
+
+    bag_help = '''
+        addbag [shop id] [mass] [price]
+        '''
+
+    sample_help = '''
+        addsample [bag id] [type id] [mass] [density] [height] [width] [depth]
+        '''
 
     def __init__(self, dbc):
         self.dbc = dbc
 
     def doHelp(self, *args):
-        print(self.help)
-
-    def doAddShop(self, options):
-        shop_help = '''
-        [shop name] [address 1] [address 2] [address 3] [county] [postcode]
-        '''
-        if options[0] == help:
-            print(shop_help)
+        try:
+            argument = args[0][0]
+        except IndexError:
+            print(self.main_help)
             return
 
-        if len(options) == 6:
+        if argument == 'addshop':
+            print(self.shop_help)
+        elif argument == 'addbag':
+            print(self.bag_help)
+        elif argument == 'addsample':
+            print(self.sample_help)
+        else:
+            print(self.main_help)
+
+    def doAddShop(self, options):
+        if len(options) == 5:
             self.dbc.writeshop(options[0], options[1], options[2],
-                               options[3], options[4], options[5])
+                               options[3], options[4])
+            print('Like a boss!')
+        else:
+            print('Unknown length of options, please try \'help addshop\'')
 
     def doAddBag(self, options):
-        bag_help = '''
-        [shop id] [mass] [price]
-        '''
-        if len(options) == 1:
-            if options[0] == 'help':
-                print(bag_help)
-                return
-
         if len(options) == 3:
             self.dbc.writebag(options[0], options[1], options[2])
+            print('Like a boss!')
+        else:
+            print('Unknown length of options, please try \'help addbag\'')
 
     def doAddSample(self, options):
-        pass
+        if len(options) == 7:
+            self.dbc.writesample(options[0], options[1], options[2],
+                                 options[3], options[4], options[5],
+                                 options[6])
+            print('Like a boss!')
+        else:
+            print('Unknown length of options, please try \'help addsample\'')
 
-    def listTypes(self):
+    def listtypes(self):
         print(self.dbc.gettypes())
+
+    def listbags(self):
+        print(self.dbc.getbags())
+
+    def listshops(self):
+        print(self.dbc.getshops())
 
     def runCli(self):
         cmd = ''
@@ -144,6 +179,12 @@ For additional help on each function, use help <function name>."""
                 self.doAddSample(cmd[1:])
             elif cmd[0] == 'help':
                 self.doHelp(cmd[1:])
+            elif cmd[0] == 'listtypes':
+                self.listtypes()
+            elif cmd[0] == 'listbags':
+                self.listbags()
+            elif cmd[0] == 'listshops':
+                self.listshops()
             elif cmd[0] == 'quit':
                 break
             else:
@@ -153,7 +194,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) != 6:
         print(USE)
-        quit
+        exit()
 
     dbc = connection(sys.argv[1], sys.argv[2], sys.argv[3],
                      sys.argv[4], sys.argv[5])

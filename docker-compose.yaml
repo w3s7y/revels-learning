@@ -1,0 +1,16 @@
+---
+version: '2'
+services:
+  postgres:
+    image: postgres:latest
+    volumes:
+     - /Users/ben/postgresqldata:/var/lib/postgresql/data
+    restart: always
+    ports:
+      - "5432:5432"
+  python:
+    image: "benwest/scientific-python:latest"
+    restart: always
+    mem_limit: 4G
+    volumes:
+      - /Users/ben/Programming/MachineLearning:/data

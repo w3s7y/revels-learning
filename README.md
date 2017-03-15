@@ -6,9 +6,10 @@ a few physical parameters (mass, height, width, etc).
 ## Data collection method
 Our data was collected manually through physical measaurement of 10 bags of revels chocolates (approx 1.2KG). The general method was as follows. 
 
+1. Put a glass of water in the fridge, this is a cool project and the water needs to be just as cool!
 1. Grab a bag
 1. Record bag data into database (total mass, price, shop bought)
-1. Write bag number on face of bag (bag_id)
+1. Write bag number on face of bag (bag_id) (if not already done)
 1. Open the bag & for each revel in the bag
   1. Measure its mass (in grams)
   1. Measure its density (in g/cm3)
@@ -24,7 +25,7 @@ Our data was collected manually through physical measaurement of 10 bags of reve
 ### Equipment used for data collection
 * Accurate Scales (0.01g resolution)
 * Vernier Calipers (0.02mm resolution)
-* Distilled Water - For measuring specific gravity and therefore density
+* Water - For measuring specific gravity and therefore density
 * Cotton Thread (for suspending sample in liquid)
 * One penny piece (used as a sinker for samples that floated (the malteasers))
 
@@ -82,6 +83,7 @@ You may also pull it directly into your local repo with
 Unit tests are written in pytest which making unit testing the project trivial.
 Simply enter the root directory of the project and execute ```pytest -r p```
 the ```-r p``` isn't even required, just gives info on each test executed.
+*DO NOT RUN THE UNIT TESTS AGAINST A PRODUCTION DATABASE*
                               
 ## Database schema
 In order to easily understand the data structures involved, I include the 
