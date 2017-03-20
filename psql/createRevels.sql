@@ -79,7 +79,7 @@ postcode from bags join shops on bags.shop_bought=shops.id;
 -- create a revels view
 create view revels_detail as
 select data.id as data_id, bags.id as bag_id, shops.id as shop_id,
-types.type_name, data.mass, data.density, data.height, data.width, data.depth
+types.type_name, data.type_id, data.mass, data.density, data.height, data.width, data.depth
 from data join bags on data.bag_id=bags.id 
 join shops on shops.id=bags.id 
 join types on types.id=data.type_id;

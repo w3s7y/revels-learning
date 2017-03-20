@@ -24,7 +24,7 @@ class connection:
         self.engine = sqlalchemy.create_engine(connectStr)
         self.dbconn = self.engine.connect()
 
-    def getconnection(self):
+    def get_connection(self):
         '''Returns the raw sqlalchemy datbase connection.'''
         return self.dbconn
 
@@ -63,24 +63,29 @@ class connection:
                             width,
                             depth)
 
-    def getshops(self):
+    def get_shops(self):
         '''Returns a pandas DataFrame of the shops table.'''
         return pandas.read_sql_table('shops', self.dbconn,
                                      schema='revels')
 
-    def getbags(self):
+    def get_bags(self):
         '''Returns a pandas DataFrame of the bags table.'''
         return pandas.read_sql_table('bags', self.dbconn,
                                      schema='revels')
 
-    def gettypes(self):
+    def get_types(self):
         '''Returns a pandas DataFrame of the types table.'''
         return pandas.read_sql_table('types', self.dbconn,
                                      schema='revels')
 
-    def getsamples(self):
+    def get_samples(self):
         '''Returns a pandas DataFrame of the data table.'''
         return pandas.read_sql_table('data', self.dbconn,
+                                     schema='revels')
+
+    def get_revels(self):
+        '''Returns the pandas object of the revels_detail view.'''
+        return pandas.read_sql_table('revels_detail', self.dbconn,
                                      schema='revels')
 
 

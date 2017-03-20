@@ -18,12 +18,12 @@ db = dbase.connection(secrets.hostname, secrets.port,
 
 
 def test_database_connection():
-    con = db.getconnection()
+    con = db.get_connection()
     assert str(type(con)) == '<class \'sqlalchemy.engine.base.Connection\'>'
 
 
 def test_get_types_returns_correct_pandas_shape():
-    results = db.gettypes()
+    results = db.get_types()
     assert results.shape == (6, 2)
 
 
@@ -46,20 +46,25 @@ def test_insert_into_data():
 
 
 def test_get_shops_returns_pandas_dataframe():
-    obj = db.getshops()
+    obj = db.get_shops()
     assert str(type(obj)) == '<class \'pandas.core.frame.DataFrame\'>'
 
 
 def test_get_bags_returns_pandas_dataframe():
-    obj = db.getbags()
+    obj = db.get_bags()
     assert str(type(obj)) == '<class \'pandas.core.frame.DataFrame\'>'
 
 
 def test_get_types_returns_pandas_dataframe():
-    obj = db.gettypes()
+    obj = db.get_types()
     assert str(type(obj)) == '<class \'pandas.core.frame.DataFrame\'>'
 
 
 def test_get_samples_returns_pandas_dataframe():
-    obj = db.getsamples()
+    obj = db.get_samples()
+    assert str(type(obj)) == '<class \'pandas.core.frame.DataFrame\'>'
+
+
+def test_get_revels_returns_pandas_dataframe():
+    obj = db.get_revels()
     assert str(type(obj)) == '<class \'pandas.core.frame.DataFrame\'>'
