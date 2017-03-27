@@ -3,6 +3,8 @@
 """
 Created on Mon Mar  6 11:52:41 2017
 
+This module contains the main code to train a model.
+
 @author: ben
 """
 
