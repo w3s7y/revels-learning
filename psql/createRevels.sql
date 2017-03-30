@@ -25,9 +25,6 @@ insert into shops (shop_name, address_1, address_2, address_3, postcode)
 insert into shops (shop_name, address_1, address_2, address_3, postcode)
   values ('Riverside Shopping Centre', 'Pride Hill Centre',
           'Shrewsbury', 'Shropshire', 'SY1 1BU');
-insert into shops (shop_name, address_1, address_2, address_3, postcode)
-  values ('E Dedman Grocers', 'Shrubbery Gardens',
-          'Wem', 'Shropshire', 'SY4 5BU');
 
 -- Record bag data
 create table bags (
