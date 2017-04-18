@@ -1,9 +1,0 @@
----
-  branches:
-    - master
-    - develop
-  pipeline:
-    test:
-      image: benwest/scientific-python
-      commands:
-        - pytest
