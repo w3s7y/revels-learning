@@ -1,0 +1,10 @@
+body {
+    width: 100%;
+    margin: 0 auto;
+    font-family: Tahoma, Verdana, Arial, sans-serif;
+}
+
+img {
+  height: inherit;
+  width: inherit;
+}

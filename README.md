@@ -1,7 +1,10 @@
 # revels-learning
 The aim of this project is primarily for personal learning, but hosted open-source in the hope that others may find it useful. It is an attempt to create
- a raw dataset through data collection and ultimately build a machine learning model capable of classifying (predicting) the type of revel based on only
-a few physical parameters (mass, height, width, etc).  
+ a dataset through data collection and ultimately build a machine learning model capable of classifying (predicting) the type of revel based on only
+a few physical parameters (mass, height, width, etc).
+                          
+This project is not by data scientists, but by a couple of infrastructure engineers
+using this to learn. 
 
 ## Data collection method
 Our data was collected manually through physical measaurement of 10 bags of revels chocolates (approx 1.2KG). The general method was as follows. 
@@ -27,7 +30,6 @@ Our data was collected manually through physical measaurement of 10 bags of reve
 * Vernier Calipers (0.02mm resolution)
 * Water - For measuring specific gravity and therefore density
 * Cotton Thread (for suspending sample in liquid)
-* One penny piece (used as a sinker for samples that floated (the malteasers))
 
 ### The Maths
 Working out the density of a solid using archimedes principle requires using a 
@@ -42,7 +44,7 @@ make it easy for anyone to run this project.
 * Docker (we used 17.03.00-ea) but anything after this will *probably* be fine
 * Docker-compose (1.12.0)
 
-I would have put git in this list, however it is not required but more a nice 
+I would put git in this list, however it is not required but more a nice 
 to have as you can download the zip of this project directly from github. 
 
 ### Get the project code
@@ -84,56 +86,4 @@ Unit tests are written in pytest which making unit testing the project trivial.
 Simply enter the root directory of the project and execute ```pytest -r p```
 the ```-r p``` isn't even required, just gives info on each test executed.
 *DO NOT RUN THE UNIT TESTS AGAINST A PRODUCTION DATABASE*
-                              
-## Database schema
-In order to easily understand the data structures involved, I include the 
-database structure (schema) in the README for completeness...
-                   
-The database has 4 tables, shops, bags, types and finally data.  
-With the following data types and relations:
-
-### Shops
-This table provides us with the ability to trace where specific samples 
-originated from (i.e. the shop where they were bought).
-
-Column Name | Type | Foreign Key
-------------|------|------------
-id | serial | none
-shop_name | text | none
-address_1 | text | none
-address_2 | text | none
-address_3 | text | none
-postcode | text | none
-
-### Bags
-This table provides us with information specific to each bag, 
-specifically it's total weight and price.
-
-Column Name | Type | Foreign Key
-------------|------|------------
-id | serial | none
-shop_bought | integer | shops(id)
-price | real | none
-
-### Types
-Provide the textual prepresentation of the Revel type.
-
-Column Name | Type | Foreign Key
-------------|------|------------
-id | serial | none
-type_name | text | none
-
-### Data
-The main data table, with all data specific to each sample. 
-
-Column Name | Type | Foreign Key
-------------|------|------------
-id | serial | none
-bag_id | integer | bags(id)
-revel_type | integer | types(id)
-mass | real | none
-density | real | none
-height | real | none
-width | real | none 
-depth | real | none
 

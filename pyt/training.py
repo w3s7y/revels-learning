@@ -8,3 +8,7 @@ This module contains the main code to train a model.
 @author: ben
 """
 
+
+class testfit:
+    """Class for running test fits against various models and reporting on
+    model accuracy."""
