@@ -28,3 +28,9 @@ class plotter:
 
     def matrix_plot(self):
         scatter_matrix(self.cleaned_data)
+
+class model_evaluation:
+    """Class which can evaluate which machine learning model is the best."""
+    
+    def __init__(self, database_connection):
+        self.dbc = database_connection.get_connection()

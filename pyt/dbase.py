@@ -54,7 +54,7 @@ class connection:
         self.dbconn.execute("insert into revels.data " +
                             "(bag_id, type_id, mass, density, height, " +
                             "width, depth) values " +
-                            "(%s, %s, %s, %s, %s, %s, %s)",
+                            "(%i, %i, %i, %i, %i, %i, %i)",
                             bag_id,
                             type_id,
                             mass,
