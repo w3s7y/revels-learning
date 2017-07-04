@@ -8,6 +8,7 @@ __pycache__/
 
 .DS_Store
 secrets.py
+*.p
 .spyproject
 
 # Distribution / packaging

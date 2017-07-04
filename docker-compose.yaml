@@ -4,12 +4,10 @@ services:
   postgres:
     image: postgres:latest
     volumes:
-     - /home/user/postgresqldata:/var/lib/postgresql/data
+     - ${HOME}/postgresqldata:/var/lib/postgresql/data
     restart: always
-    ports:
-      - "5432:5432"
   python:
     image: "benwest/scientific-python:latest"
     restart: always
     volumes:
-      - /home/user/revels-learning:/data
+      - ${HOME}/revels-learning:/data
