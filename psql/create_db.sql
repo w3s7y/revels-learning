@@ -7,10 +7,11 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
 
+
+CREATE ROLE scienceuser
 --
 -- Name: sciencedbase; Type: DATABASE; Schema: -; Owner: scienceuser
 --
-
 CREATE DATABASE sciencedbase WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'en_US.utf8' LC_CTYPE = 'en_US.utf8';
 
 

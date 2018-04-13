@@ -41,53 +41,38 @@ prepared a couple of docker images in addition to this project which should
 make it easy for anyone to run this project.
 
 ### Install pre-requisite software
-* Docker (we used 17.03.00-ea) but anything after this will *probably* be fine
-* Docker-compose (1.12.0) or the latest stable version.
+* Docker (I used 17.03) but anything after this will *probably* be fine
 
 I would put git in this list, however it is not required but more a nice
 to have as you can download the zip of this project directly from github.
 
 ### Get the project code
 Either use git to clone this project (as mentioned above) or just download it
-to a folder of your choosing and unzip it *into your home directory*. (For the purposes of this readme,
-we shall assume you have unzipped it to `/home/user/revels-learning`).
+to a folder of your choosing and unzip it *into your home directory*. (To follow along at home, `cd` into the project
+directory).
 
-### Start the environment
-In the root of the folder there is a ```docker-compose.yaml``` this will create
-a docker network and 2 containers in that network.  A single Postgresql database
-instance and also a python data science container.
-
-```shell
-cd ${HOME}/revels-learning
-docker-compose up -d
-```
-This docker compose command will create a docker network (so the images can talk
-to each other) and start the containers.
-
-### Get a shell on the python container
-Next up, simply run `docker exec` to connect to the running python container
-
-```shell
-docker exec -it revelslearning_python_1 bash
+### Build the ML container
+There is a Dockerfile in the repo which will build you a container to run the ML project in, you can build it by running:
+```bash
+docker build -t revels:latest .
 ```
 
-### Use the scripts to load the data into the database.
-As the containers are started empty, we need to load the data from a pg_dump file
-into your database, this is done by running the bootstrap script with the
-`do-initial-dataload` argument from within the python container:
+### Start a postgres container
+We will use the official postgres 9.6 image for this project.  Start one up by running:
+```bash
+docker run -d --name postgres -e POSTGRES_PASSWORD=somepassword postgres:9.6
+```
+Just choose a admin database password you like... you will need it later when starting the ML container. 
 
-```shell
-python pyt/bootstrap.py do-initial-dataload
-```  
-
-This script will create a database user called `scienceuser` with a password of
-`sicenceuser` and also execute the sql scripts `psql/create_db.sql` and
-`psql/dbdump.sql`.  This will put the database into a usable state for the
-remainder of the project.
+### Start the ML container
+Now start up the ML container interactively 
+```bash
+docker run -it --name revels --link postgres -e REVELS_DB_ADMIN_PASS=somepassword revels
+```
 
 ### Train the models
 There is some more bootstrapping code that will train 6 common machine learning
-algorithms (models):
+algorithms (models) and save the model to the database in a table:
 
 * Logistic Regression
 * Linear Discrimination Analysis
@@ -104,25 +89,31 @@ and it trains to put observations into clusters (groups).
 To train the models (and save the trained models to disk) simply execute:
 
 ```shell
-python pyt/bootstrap.py do-train-model
+python pyt/run.py train-models
 ```
 
-This will load the data out of the database into a pandas data frame,
+This command will check to see if the database already exists and if not create it and load the data, then train the 6 
+aforementioned models and persist them back in the database for later use along with some metadata for each model 
+pertaining to their accuracy, f1 score etc. 
 
 ### Showing a summary
 This step is not necessary, however can be nice to see a textual representation
 of the data.
 
 ```shell
-python pyt/bootstrap.py do-show-summary
+python pyt/run.py summary
 ```
+
+This gives you a very basic statistical summary of the data set.
 
 ### Showing the results
 To get a list of the results of model training, simply run:
 
 ```shell
-python pyt/bootstrap.py do-show-results
+python pyt/run.py results
 ```
+
+This essentially just fetches the metadata from the database and prints it out. 
 
 ### Predicting a revel
 This is the heart of the machine learning project, actually taking some 
@@ -140,7 +131,7 @@ All dimesnsions are in mm, mass is in grams and density in g/cm3.
 To get the models to predict on a revel, simply run
 
 ```shell
-python pyt/bootstrap.py do-predict-revel
+python pyt/run.py predict
 ```
 
 This will then interactively ask for the data of the revel, and also ask which 
@@ -166,12 +157,6 @@ This file needs to be renamed to ```secrets.py``` in order for the pytest to
 pick up the correct database connection details in order to test the db
 connection code and also used by the machine learning code itself to pick up
 the database connection details.
-
-## Execution environment
-I have created a docker image which has all of the necessary modules and
-programs installed to run this project.  This can be found on [docker hub](https://hub.docker.com/w3s7y/scientific-python)
-You may also pull it directly into your local repo with
-```docker pull benwest/scientific-python```
 
 ## Unit testing the project
 Unit tests are written in pytest which making unit testing the project trivial.
