@@ -1,4 +1,6 @@
 sklearn
 pandas
 sqlalchemy
-psycopg2
+psycopg2-binary
+scipy
+matplotlib

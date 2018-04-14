@@ -44,6 +44,31 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: models; Type: TABLE; Schema: revels; Owner: postgres
+--
+CREATE TABLE models (
+    id integer NOT NULL,
+    trained_model blob NOT NULL,
+    accuracy_score real NOT NULL,
+    metadata text NOT NULL
+);
+
+ALTER TABLE models OWNER to postgres;
+
+CREATE SEQUENCE models_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE models_id_seq OWNED BY models.id;
+ALTER TABLE ONLY models ALTER COLUMN id SET DEFAULT nextval('models_id_seq'::regclass);
+SELECT pg_catalog.setval('models_id_seq', 1, true);
+ALTER TABLE ONLY models ADD CONSTRAINT models_pkey PRIMARY KEY (id);
+GRANT SELECT,INSERT ON TABLE models TO scienceuser;
+
+--
 -- Name: bags; Type: TABLE; Schema: revels; Owner: postgres
 --
 
@@ -276,7 +301,7 @@ SELECT pg_catalog.setval('bags_id_seq', 3, true);
 --
 -- Data for Name: data; Type: TABLE DATA; Schema: revels; Owner: postgres
 --
-
+INSERT INTO data VALUES (1, 1, 5, 2.56999993, 0.5, 17.9799995, 18.5799999, 18.7399998);
 INSERT INTO data VALUES (2, 1, 2, 2.1099999, 1.25999999, 12.7600002, 16.2800007, 14.5);
 INSERT INTO data VALUES (3, 1, 6, 2.06999993, 1.22000003, 8.18000031, 19.2999992, 19.3400002);
 INSERT INTO data VALUES (4, 1, 3, 3.31999993, 1.24000001, 17, 16.8799992, 16.7399998);
@@ -326,7 +351,6 @@ INSERT INTO data VALUES (47, 1, 1, 1.60000002, 1.19000006, 10.6000004, 17.079999
 INSERT INTO data VALUES (48, 1, 1, 1.51999998, 1.17999995, 9.52000046, 18.3999996, 12.4399996);
 INSERT INTO data VALUES (49, 1, 1, 1.46000004, 1.19000006, 8.64000034, 18, 12.8999996);
 INSERT INTO data VALUES (50, 1, 2, 2.07999992, 1.25, 12.2799997, 17, 13.7399998);
-INSERT INTO data VALUES (1, 1, 5, 2.56999993, 0.5, 17.9799995, 18.5799999, 18.7399998);
 INSERT INTO data VALUES (51, 2, 4, 3.42000008, 1.20000005, 15.6000004, 17.5599995, 17.4599991);
 INSERT INTO data VALUES (52, 2, 5, 2.3900001, 0.5, 18.4400005, 18.4400005, 19.1200008);
 INSERT INTO data VALUES (53, 2, 2, 2.31999993, 1.26999998, 13.2600002, 17.4599991, 14.5200005);
@@ -578,4 +602,3 @@ GRANT USAGE ON SEQUENCE types_id_seq TO scienceuser;
 --
 -- PostgreSQL database dump complete
 --
-

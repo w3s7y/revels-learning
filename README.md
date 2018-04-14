@@ -67,7 +67,7 @@ Just choose a admin database password you like... you will need it later when st
 ### Start the ML container
 Now start up the ML container interactively 
 ```bash
-docker run -it --name revels --link postgres -e REVELS_DB_ADMIN_PASS=somepassword revels
+docker run -it --name revels --link postgres -e REVELS_DB_ADMIN_PASS=somepassword -v ${PWD}:/project revels
 ```
 
 ### Train the models
@@ -89,7 +89,7 @@ and it trains to put observations into clusters (groups).
 To train the models (and save the trained models to disk) simply execute:
 
 ```shell
-python pyt/run.py train-models
+python3 pyt/run.py train-models
 ```
 
 This command will check to see if the database already exists and if not create it and load the data, then train the 6 
@@ -97,27 +97,25 @@ aforementioned models and persist them back in the database for later use along 
 pertaining to their accuracy, f1 score etc. 
 
 ### Showing a summary
-This step is not necessary, however can be nice to see a textual representation
-of the data.
+This step is not necessary, however can be nice to see a textual representation of some basic stats for each type of 
+revel in the current data set.
 
 ```shell
-python pyt/run.py summary
+python3 pyt/run.py summary
 ```
-
-This gives you a very basic statistical summary of the data set.
 
 ### Showing the results
 To get a list of the results of model training, simply run:
 
 ```shell
-python pyt/run.py results
+python3 pyt/run.py results
 ```
 
 This essentially just fetches the metadata from the database and prints it out. 
 
 ### Predicting a revel
 This is the heart of the machine learning project, actually taking some 
-measurments, querying a model to provide us with a prediction as to what kind 
+measurements, querying a model to provide us with a prediction as to what kind 
 of revel it is.  To do this simply take the measurements of your revel:
 
     <-  width ->
@@ -131,7 +129,7 @@ All dimesnsions are in mm, mass is in grams and density in g/cm3.
 To get the models to predict on a revel, simply run
 
 ```shell
-python pyt/run.py predict
+python3 pyt/run.py predict
 ```
 
 This will then interactively ask for the data of the revel, and also ask which 
@@ -139,27 +137,3 @@ model you would like to test.
 
 It will then output the classification it believes the sample belongs to. 
 
-## Project structure
-The project files are split up into the following folders:
-
-#### /psql
-Contains the Postgresql schema creation file.
-
-#### /pyt
-Contains the main python machine learning and database IO modules.
-This is where the bulk of the project code lives.
-
-#### /unittests
-Contains pytest modules for testing the code in pyt folder.
-
-#### secrets_template.py
-This file needs to be renamed to ```secrets.py``` in order for the pytest to
-pick up the correct database connection details in order to test the db
-connection code and also used by the machine learning code itself to pick up
-the database connection details.
-
-## Unit testing the project
-Unit tests are written in pytest which making unit testing the project trivial.
-Simply enter the root directory of the project and execute ```pytest -r p```
-the ```-r p``` isn't even required, just gives info on each test executed.
-*DO NOT RUN THE UNIT TESTS AGAINST A PRODUCTION DATABASE*
