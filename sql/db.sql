@@ -48,8 +48,8 @@ SET default_with_oids = false;
 --
 CREATE TABLE models (
     id integer NOT NULL,
-    trained_model blob NOT NULL,
-    accuracy_score real NOT NULL,
+    trained_model binary NOT NULL,
+    accuracy_score float NOT NULL,
     metadata text NOT NULL
 );
 

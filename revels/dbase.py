@@ -14,6 +14,14 @@ import pandas
 import os
 
 logging.basicConfig(level=logging.INFO)
+db_host = os.environ.get('REVELS_DB_HOST', 'postgres')
+db_port = os.environ.get('REVELS_DB_PORT', '5432')
+db_adm_usr = os.environ.get('REVELS_DB_ADMIN_USER', 'postgres')
+db_adm_pass = os.environ.get('REVELS_DB_ADMIN_PASS', 'somepassword')
+db_user = os.environ.get('REVELS_DB_USER', 'scienceuser')
+db_pass = os.environ.get('REVELS_DB_PASS', 'sciencepass')
+db_name = os.environ.get('REVELS_DB_NAME', 'revels')
+db_schema = os.environ.get('REVELS_DB_SCHEMA', 'revels')
 
 
 def create_database(drop):
@@ -22,15 +30,6 @@ def create_database(drop):
     :param drop: Drop any existing database (boolean)
     :return: None, were pretty verbose in the logger.
     """
-    # Grab the requisite env vars.
-    db_host = os.environ.get('REVELS_DB_HOST', 'postgres')
-    db_port = os.environ.get('REVELS_DB_PORT', '5432')
-    db_adm_usr = os.environ.get('REVELS_DB_ADMIN_USER', 'postgres')
-    db_adm_pass = os.environ.get('REVELS_DB_ADMIN_PASS', 'somepassword')
-    db_user = os.environ.get('REVELS_DB_USER', 'scienceuser')
-    db_pass = os.environ.get('REVELS_DB_PASS', 'sciencepass')
-    db_name = os.environ.get('REVELS_DB_NAME', 'revels')
-    db_sche = os.environ.get('REVELS_DB_SCHEMA', 'revels')
 
     # Create connection to postgres DB as admin user to create top level objects.
     engine = sqlalchemy.create_engine('postgresql+psycopg2://{}:{}@{}:{}/{}'.format(db_adm_usr, db_adm_pass, db_host,
@@ -42,7 +41,7 @@ def create_database(drop):
     if drop:
         logging.info("Dropping database {}".format(db_name))
         con.execute("commit")
-        con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(db_sche))
+        con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(db_schema))
         con.execute("commit")
         con.execute("DROP DATABASE IF EXISTS {}".format(db_name))
         con.execute("commit")
@@ -79,15 +78,14 @@ def create_database(drop):
     logging.info("Database creation complete.")
 
 
-
-
 class connection:
     """Main database class, maintains the connection to the dbase."""
-    def __init__(self, host, port, user, password, dbname, db_schema):
-        connectStr = 'postgresql+psycopg2://' + user + ':' + password + '@' + \
-            host + ':' + port + '/' + dbname
 
-        self.engine = sqlalchemy.create_engine(connectStr)
+    def __init__(self):
+        connect_str = 'postgresql+psycopg2://' + db_user + ':' + db_pass + '@' + \
+                     db_host + ':' + db_port + '/' + db_name
+
+        self.engine = sqlalchemy.create_engine(connect_str)
         self.dbconn = self.engine.connect()
         self.dbconn.execute("SET search_path = {}, pg_catalog".format(db_schema))
         self.dbconn.execute("commit")
@@ -95,7 +93,6 @@ class connection:
     def get_connection(self):
         '''Returns the raw sqlalchemy datbase connection.'''
         return self.dbconn
-
 
     def write_shop(self, shop_name, address1, address2, address3, postcode):
         '''Write a shop to the DB.'''

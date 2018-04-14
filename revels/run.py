@@ -14,32 +14,30 @@ import dbase
 import training
 
 logging.basicConfig(level=logging.INFO)
-db_host = os.environ.get('REVELS_DB_HOST', 'postgres')
-db_port = os.environ.get('REVELS_DB_PORT', '5432')
-db_user = os.environ.get('REVELS_DB_USER', 'scienceuser')
-db_pass = os.environ.get('REVELS_DB_PASS', 'sciencepass')
-db_name = os.environ.get('REVELS_DB_NAME', 'revels')
-db_schema = os.environ.get('REVELS_DB_SCHEMA', 'revels')
+
 
 def test_for_revels_database():
     try:
-        c = dbase.connection(db_host, db_port, db_user, db_pass, db_name, db_schema)
+        c = dbase.connection()
         c.get_bags()
+        logging.debug("test_for_revels_database returning True")
         return True
     except Exception as e:
         logging.error(e)
+        c.get_connection().close()
+        logging.debug("test_for_revels_database returning False")
         return False
 
 
 def train_models():
-    training.train_and_validate_models(dbase.connection(db_host, db_port, db_user, db_pass, db_name, db_schema))
+    training.train_models()
 
 def validate_models():
-    training.validate_models(dbase.connection(db_host, db_port, db_user, db_pass, db_name, db_schema))
+    training.validate_models()
 
 def show_summary():
     logging.info("Preparing data summary...")
-    c = dbase.connection(db_host, db_port, db_user, db_pass, db_name, db_schema)
+    c = dbase.connection()
     revels_dataframe = c.get_samples().drop(columns=['id', 'bag_id', 'type_id'])
     logging.info("\n{}".format(revels_dataframe.describe()))
 
