@@ -48,9 +48,10 @@ SET default_with_oids = false;
 --
 CREATE TABLE models (
     id integer NOT NULL,
-    trained_model binary NOT NULL,
+    model_name text NOT NULL,
+    trained_model bytea NOT NULL,
     accuracy_score float NOT NULL,
-    metadata text NOT NULL
+    metadata bytea NOT NULL
 );
 
 ALTER TABLE models OWNER to postgres;
@@ -67,6 +68,8 @@ ALTER TABLE ONLY models ALTER COLUMN id SET DEFAULT nextval('models_id_seq'::reg
 SELECT pg_catalog.setval('models_id_seq', 1, true);
 ALTER TABLE ONLY models ADD CONSTRAINT models_pkey PRIMARY KEY (id);
 GRANT SELECT,INSERT ON TABLE models TO scienceuser;
+GRANT USAGE ON SEQUENCE models_id_seq TO scienceuser;
+
 
 --
 -- Name: bags; Type: TABLE; Schema: revels; Owner: postgres

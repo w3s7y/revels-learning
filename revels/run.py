@@ -8,42 +8,11 @@ Provides single entry point to project.
 @author: ben
 """
 import sys
-import os
 import logging
 import dbase
 import training
 
 logging.basicConfig(level=logging.INFO)
-
-
-def test_for_revels_database():
-    try:
-        c = dbase.connection()
-        c.get_bags()
-        logging.debug("test_for_revels_database returning True")
-        return True
-    except Exception as e:
-        logging.error(e)
-        c.get_connection().close()
-        logging.debug("test_for_revels_database returning False")
-        return False
-
-
-def train_models():
-    training.train_models()
-
-def validate_models():
-    training.validate_models()
-
-def show_summary():
-    logging.info("Preparing data summary...")
-    c = dbase.connection()
-    revels_dataframe = c.get_samples().drop(columns=['id', 'bag_id', 'type_id'])
-    logging.info("\n{}".format(revels_dataframe.describe()))
-
-
-def print_results():
-    pass
 
 
 def predict():
@@ -63,24 +32,36 @@ def predict():
                  "height = {}"
                  "width = {}"
                  "depth = {}".format(mass, density, height, width, depth))
-
+    logging.info(training.predict(mass, density, height, width, depth))
 
 
 if __name__ == '__main__':
     # If the database cannot be found, create it & load the data
-    if not test_for_revels_database():
-        dbase.create_database(False)
+    if not dbase.database_exists():
+        dbase.create_database()
 
-    if sys.argv[1] == 'train-models':
-        train_models()
+    if sys.argv[1] == 'train':
+        logging.info("Training machine learning models")
+        training.train_models(sys.argv[2], True)
+
+    elif sys.argv[1] == 'x-val-score':
+        logging.info("Doing cross validation on models")
+        training.validate_models(sys.argv[2])
+
     elif sys.argv[1] == 'validate':
-        validate_models()
+        logging.info("Performing full validation")
+        training.train_models(sys.argv[2], False)
+
     elif sys.argv[1] == 'summary':
-        show_summary()
+        logging.info("Preparing data summary...")
+        dbase.connection().log_summary()
+
     elif sys.argv[1] == 'results':
-        print_results()
+        logging.info("Getting best {} models from database.".format(sys.argv[2]))
+        dbase.connection().log_results(sys.argv[2])
+
     elif sys.argv[1] == 'predict':
         predict()
     else:
-        print('Error parsing argument')
+        logging.error("Error parsing argument")
         sys.exit(1)

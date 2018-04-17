@@ -13,16 +13,14 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
 import sklearn.model_selection
 import logging
 import dbase
 
-logging.basicConfig(level=logging.INFO)
-
-
-def get_db_connection():
-    return dbase.connection()
-
+logging.basicConfig(level=logging.DEBUG)
 
 class ValidationSplitter:
     def __init__(self, db_connection, validation_split):
@@ -46,35 +44,69 @@ class ValidationSplitter:
             random_state=7)
 
 
-models = [('Logistic Regression', LogisticRegression()),
-          ('Decision Tree', DecisionTreeClassifier()),
-          ('K Nearest Neighbours', KNeighborsClassifier()),
-          ('Linear Discriminant', LinearDiscriminantAnalysis()),
-          ('Naive Bayes', GaussianNB()),
-          ('Support Vector Machines', SVC())]
+def get_models():
+    return [('Logistic_Regression', LogisticRegression()),
+          ('Decision_Tree', DecisionTreeClassifier()),
+          ('K_Nearest_Neighbours', KNeighborsClassifier()),
+          ('Linear_Discriminant', LinearDiscriminantAnalysis()),
+          ('Naive_Bayes', GaussianNB()),
+          ('Support_Vector_Machines', SVC())]
 
 
-def validate_models():
+def validate_models(validation_split):
     """
-    Performs a K-Fold X-Validation (whatever that is?)
+    Performs cross validation on the models
     :param data_connection: dbase.connection object
     :return: None, it prints to stdout.
     """
-    data = ValidationSplitter(get_db_connection(), 0.1)
-    k_fold = sklearn.model_selection.KFold(n_splits=3, random_state=7)
-    for name, model in models:
+    con = dbase.connection()
+    data = ValidationSplitter(con, float(validation_split))
+    k_fold = sklearn.model_selection.KFold(n_splits=10, random_state=7)
+    for name, model in get_models():
         logging.info("Performing cross validation on {}".format(name))
         x_val_score = sklearn.model_selection.cross_val_score(model, data.X_train, data.Y_train,
-                                                       cv=k_fold, scoring='accuracy')
-        learn_curve = sklearn.model_selection.learning_curve(model, data.X_train, data.Y_train,
-                                                             cv=k_fold, scoring='accuracy')
-        logging.info(learn_curve)
-        logging.info("{} accuracy: {} ({})".format(name, x_val_score.mean(), x_val_score.std()))
+                                                              cv=k_fold, scoring='accuracy')
+        logging.debug("{}\n{}".format(name, x_val_score))
+        logging.info("{} x_val mean (std dev): {} ({})".format(name, x_val_score.mean(), x_val_score.std()))
+    # Close connection
+    con.get_connection().close()
 
 
-def train_models():
-    pass
+def train_models(validation_split, persist):
+    con = dbase.connection()
+    data = ValidationSplitter(con, float(validation_split))
+    accuracy = []
+    confusion = []
+    classification = []
+    for name, model in get_models():
+        logging.info("Training {}".format(name))
+        model.fit(data.X_train, data.Y_train)
+        logging.info("Training complete, performing predictions on validation data")
+        predictions = model.predict(data.X_test)
+        score = accuracy_score(predictions, data.Y_test)
+        confu = confusion_matrix(predictions, data.Y_test)
+        classi = classification_report(predictions, data.Y_test)
+        accuracy.append((name, score))
+        confusion.append((name, confu))
+        classification.append((name, classi))
+        if persist:
+            con.write_model_to_db(name, model, score,
+                                  {"validataion_split": validation_split,
+                                   "confusion_matrix": confu,
+                                   "classification_rep": classi})
+
+    for x in confusion:
+        logging.info("Confusion Matrix for {} using validation split {}:\n{}".format(x[0], validation_split, x[1]))
+    for x in classification:
+        logging.info("Classification Report for {} validation split {}:\n{}".format(x[0], validation_split, x[1]))
+    for x in accuracy:
+        logging.info("Accuracy Score for {} validation split {}:\n{}".format(x[0], validation_split, x[1]))
+
+    con.get_connection().close()
 
 
-def predict():
-    pass
+def predict(mass, density, height, width, depth):
+    con = dbase.connection()
+    model = con.get_best_model()
+    con.get_connection().close()
+    return model.predict([mass, density, height, width, depth])

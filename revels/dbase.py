@@ -12,9 +12,12 @@ import logging
 import sqlalchemy
 import pandas
 import os
+import pickle
+import io
 
 logging.basicConfig(level=logging.INFO)
-db_host = os.environ.get('REVELS_DB_HOST', 'postgres')
+
+db_host = os.environ.get('REVELS_DB_HOST', 'revels-db')
 db_port = os.environ.get('REVELS_DB_PORT', '5432')
 db_adm_usr = os.environ.get('REVELS_DB_ADMIN_USER', 'postgres')
 db_adm_pass = os.environ.get('REVELS_DB_ADMIN_PASS', 'somepassword')
@@ -24,7 +27,22 @@ db_name = os.environ.get('REVELS_DB_NAME', 'revels')
 db_schema = os.environ.get('REVELS_DB_SCHEMA', 'revels')
 
 
-def create_database(drop):
+def database_exists():
+    try:
+        connect_str = 'postgresql+psycopg2://' + db_adm_usr + ':' + db_adm_pass + '@' + \
+                      db_host + ':' + db_port + '/' + db_name
+        engine = sqlalchemy.create_engine(connect_str)
+        dbconn = engine.connect()
+        logging.debug("database_exists returning True")
+        dbconn.close()
+        return True
+    except Exception as e:
+        logging.error(e)
+        logging.debug("database_exists returning False")
+        return False
+
+
+def create_database():
     """
     Creates a DB and runs in sql/db.sql.
     :param drop: Drop any existing database (boolean)
@@ -38,16 +56,16 @@ def create_database(drop):
     logging.info("Successfully connected to database 'postgres' as {}".format(db_adm_usr))
 
     # Drop existing database if requested.
-    if drop:
-        logging.info("Dropping database {}".format(db_name))
-        con.execute("commit")
-        con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(db_schema))
-        con.execute("commit")
-        con.execute("DROP DATABASE IF EXISTS {}".format(db_name))
-        con.execute("commit")
-        con.execute("DROP ROLE {}".format(db_user))
-        con.execute("commit")
-        logging.info("Database {} successfully dropped.".format(db_name))
+
+    logging.info("Dropping database {}".format(db_name))
+    con.execute("commit")
+    con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(db_schema))
+    con.execute("commit")
+    con.execute("DROP DATABASE IF EXISTS {}".format(db_name))
+    con.execute("commit")
+    con.execute("DROP ROLE IF EXISTS {}".format(db_user))
+    con.execute("commit")
+    logging.info("Database {} successfully dropped.".format(db_name))
 
     # Create the application user
     con.execute(sqlalchemy.text("CREATE ROLE {} WITH LOGIN PASSWORD '{}'".format(db_user, db_pass)))
@@ -89,6 +107,7 @@ class connection:
         self.dbconn = self.engine.connect()
         self.dbconn.execute("SET search_path = {}, pg_catalog".format(db_schema))
         self.dbconn.execute("commit")
+
 
     def get_connection(self):
         '''Returns the raw sqlalchemy datbase connection.'''
@@ -132,27 +151,59 @@ class connection:
     def get_shops(self):
         '''Returns a pandas DataFrame of the shops table.'''
         return pandas.read_sql_table('shops', self.dbconn,
-                                     schema='revels')
+                                     schema=db_schema)
 
     def get_bags(self):
         '''Returns a pandas DataFrame of the bags table.'''
         return pandas.read_sql_table('bags', self.dbconn,
-                                     schema='revels')
+                                     schema=db_schema)
 
     def get_types(self):
         '''Returns a pandas DataFrame of the types table.'''
         return pandas.read_sql_table('types', self.dbconn,
-                                     schema='revels')
+                                     schema=db_schema)
 
     def get_samples(self):
         '''Returns a pandas DataFrame of the data table.'''
         return pandas.read_sql_table('data', self.dbconn,
-                                     schema='revels')
+                                     schema=db_schema)
 
     def get_revels(self):
         '''Returns the pandas object of the revels_detail view.'''
         return pandas.read_sql_table('revels_detail', self.dbconn,
-                                     schema='revels')
+                                     schema=db_schema)
 
-    def write_model_to_db(self, model, metadata):
-        self.dbconn.execute()
+    def log_summary(self):
+        revels_data_frame = self.get_revels().drop(columns=['bag_id', 'type_id', 'shop_id', 'data_id']).groupby('type_name')
+        for name, group in revels_data_frame:
+            logging.info("{}\n{}".format(name, group.describe()))
+
+    def log_results(self, num):
+        results = self.dbconn.execute("SELECT model_name,accuracy_score FROM revels.models "
+                                             "ORDER BY accuracy_score DESC LIMIT {}".format(num))
+        model_count = self.dbconn.execute("SELECT count(*) FROM revels.models").next()['count']
+        for row in results:
+            logging.info("{}: {}%".format(row['model_name'], round(row['accuracy_score'] * 100, 2)))
+        logging.info("{} trained models total".format(model_count))
+
+    def write_model_to_db(self, model_name, model, score, metadata):
+
+        model_bytes = io.BytesIO()
+        meta_bytes = io.BytesIO()
+        pickle.dump(model, model_bytes)
+        pickle.dump(metadata, meta_bytes)
+        model_bytes.seek(0)
+        meta_bytes.seek(0)
+
+        self.dbconn.execute("INSERT INTO revels.models (model_name, trained_model, accuracy_score, metadata) VALUES "
+                            "(%s, %s, %s, %s)", model_name, model_bytes.read(), score, meta_bytes.read())
+        self.dbconn.execute("COMMIT")
+
+    def get_best_model(self):
+        result = self.dbconn.execute("SELECT (model, accuracy_score, metadata) "
+                                     "FROM revels.models ORDER BY accuracy_score DESC LIMIT 1")
+        row = result.next()
+        score = row['accuracy_score']
+        model = pickle.loads(row['trained_model'])
+        meta = pickle.loads(row['metadata'])
+        return model, score, meta
