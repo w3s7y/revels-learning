@@ -7,7 +7,7 @@ This project is not by data scientists, but by an interested infrastructure engi
 As such the project also serves as a good introduction to running docker containers, building your own containers etc.
 
 ## Data collection method
-Our data was collected manually through physical measurement of 10 bags of revels chocolates (approximately 1.2KG). The general method was as follows.
+Our data was collected manually through physical measurement of bags of revels chocolates. The general method was as follows.
 
 * Put a glass of water in the fridge, this is a cool project and the water needs to be just as cool!
 * Grab a bag
@@ -23,7 +23,7 @@ Our data was collected manually through physical measurement of 10 bags of revel
     * eat the sample to confirm it's type
     * Record data into database along with it's bag number
     * Repeat above steps for every sample in the bag
-* Repeat for all ten bags.
+* Repeat for all bags.
 
 ### Equipment used for data collection
 * Accurate Scales (0.01g resolution)
@@ -65,14 +65,14 @@ at tag `lastest`.
 ### Start a database container
 We will use the official postgres 9.6 image as the database backend for this project.  Start the DB container by running:
 ```bash
-docker run -d --name revels-db -e POSTGRES_PASSWORD=somepassword postgres:9.6
+docker run -d --name revelsdb -e POSTGRES_PASSWORD=somepassword postgres:9.6
 ```
 Just choose a admin database password you like... you will need it later when starting the ML container. 
 
 ### Start the revels-ml container
 Now start up the ML container you built earlier by running: 
 ```bash
-docker run -it --name revels-ml --link revels-db -e REVELS_DB_ADMIN_PASS=somepassword -v ${PWD}:/project revels
+docker run -it --name revelsml --link revelsdb -e REVELS_DB_ADMIN_PASS=somepassword -v ${PWD}:/project revels
 ```
 As we ran this with "The interactive flags (-it)" set, this will start the container and attach our terminal to the IO
 streams of the container (giving us a shell on the container).  
@@ -80,10 +80,11 @@ streams of the container (giving us a shell on the container).
 From within the container you can now use the ML code to train models and predict revels!
 
 ### Train the models
-There is some more bootstrapping code that will train 5 common machine learning
+There is some more bootstrapping code that will train common machine learning
 algorithms (models) and save the model to the database in a table:
 
 * Logistic Regression
+* Linear Discriminant
 * K Nearest Neighbour
 * Descision Tree Classifier
 * Gaussian Naive Bayes
@@ -94,48 +95,74 @@ by we tell the algorithm the results while it's learning.  This is opposed to
 clustering algorithms (unsupervised) where we don't give it any classification
 and it trains to put observations into clusters (groups).
 
-To train the models (and save the trained models to disk) simply execute:
+To train the models a few times (and save the trained models to database) simply execute (in the revelsml container):
 
-```shell
-python3 revels/run.py train [validation-split]
+```bash
+python3 revels/run.py train-models
 ```
 
-This command will check to see if the database already exists and if not create it and load the data, then train the 5 
+This command will check to see if the database already exists and if not create it and load the data, then train the
 aforementioned models and persist them back in the database for later use along with some metadata for each model 
 pertaining to their accuracy, f1 score etc. 
 
-Validation-split is the amount of data to keep back for validation steps (0.2 = 20% of data kept for validation)
+### Customising training
+In the above example we selected a range of validation data set sizes and random seeds to use in order to generate
+a few models in the database, if you wish to train using a diffrent set you can just run:
+```bash
+python3 revels/run.py train [validation-split] [random-seed]
+```
+Validation-split is the amount of data to keep back for validation steps i.e. not used to train the model 
+(0.2 = 20% of data kept for validation).  I find somewhere around the 0.25-0.30 range trains the best models.
+
+Random seed is the initial state for the train/test splitter, so you can generate same inputs to the models.
 
 ### Train the models (without persisting to DB)
-Sometimes, you may just want to get the scores for a particular set of training parameters without saving the mdoels to
+Sometimes, you may just want to get the scores for a particular set of training parameters without saving the models to
 the DB.  In that instance, just run the `validate` argument (same parameters as `train` argument).
-```shell
-python3 revels/run.py validate [validation-split]
+```bash
+python3 revels/run.py validate [validation-split] [random-seed]
 
 ```
 
 ### Cross validation scoring for models
-```shell
-python3 revels/run.py x-val-score [validation-split] [k-fold] [random-seed]
+```bash
+python3 revels/run.py x-val-score [validation-split] [k-fold-splits] [random-seed]
 ```
+Performs a cross validation on the models, using a kfold cross validation scheme.
+KFold configuration (no of splits, random seed) provided via cmdline.
 
 ### Showing a summary
 This step is not necessary, however can be nice to see a textual representation of some basic stats for each type of 
 revel in the current data set.
 
-```shell
+```bash
 python3 revels/run.py summary
 ```
-This gives you things like the mix/max/average of each variable grouped by type.
+This gives you things like the mix/max/average of each variable grouped by type as well as the total number of observations
+for each revel type.
 
 ### Showing the results
 To get a list of the results of model training, simply run:
 
-```shell
+```bash
 python3 revels/run.py results [number]
 ```
 
-This essentially just fetches top `number` models (sorted by accuracy) from the database and reports on the algorithm used. 
+This essentially just fetches the top `number` models (sorted by accuracy) from the database and reports on the algorithm used. 
+
+### Getting a specific model from the database
+In the `results` output, you will see an id number for each model, you can use this to get more stats on that model with:
+```bash
+python3 revels/run.py get-model-by-id [model_id]
+```
+
+### Best model
+To get more details on the best model trained in the database, run:
+```bash
+python3 revels/run.py best-model
+```
+This will give you the validation_split the model was trained on, it's accuracy score, confusion matrix result and
+classification report.
 
 ### Predicting a revel
 This is the heart of the machine learning project, actually taking some 
@@ -154,8 +181,8 @@ desk.
 
 To get the models to predict on a revel, simply run:
 
-```shell
-python3 pyt/run.py predict
+```bash
+python3 revels/run.py predict
 ```
 
 This will then interactively ask for the data of the revel, and also ask which 
@@ -163,3 +190,8 @@ model you would like to test.
 
 It will then output the classification it believes the sample belongs to, along with it's certainty (as %).
 
+### Using a specific model for prediction
+Same as above, but runs the prediction using a specific model from the database. 
+```bash
+python3 revels/run.py predict-with [model_id]
+```

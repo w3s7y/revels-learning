@@ -17,7 +17,7 @@ import io
 
 logging.basicConfig(level=logging.INFO)
 
-db_host = os.environ.get('REVELS_DB_HOST', 'revels-db')
+db_host = os.environ.get('REVELS_DB_HOST', 'revelsdb')
 db_port = os.environ.get('REVELS_DB_PORT', '5432')
 db_adm_usr = os.environ.get('REVELS_DB_ADMIN_USER', 'postgres')
 db_adm_pass = os.environ.get('REVELS_DB_ADMIN_PASS', 'somepassword')
@@ -115,7 +115,7 @@ class connection:
 
     def write_shop(self, shop_name, address1, address2, address3, postcode):
         '''Write a shop to the DB.'''
-        self.dbconn.execute('insert into revels.shops (shop_name,' +
+        self.dbconn.execute('insert into shops (shop_name,' +
                             'address_1, address_2, address_3, postcode) ' +
                             'values (%s, %s, %s, %s, %s)',
                             shop_name,
@@ -126,7 +126,7 @@ class connection:
 
     def write_bag(self, shop_id, mass, price):
         '''Write a bag to the DB.'''
-        self.dbconn.execute("insert into revels.bags " +
+        self.dbconn.execute("insert into bags " +
                             "(shop_bought, total_mass, price) " +
                             "values (%s, %s, %s)",
                             shop_id,
@@ -136,7 +136,7 @@ class connection:
     def write_sample(self,
                      bag_id, type_id, mass, density, height, width, depth):
         '''Write a row of sample data to the DB.'''
-        self.dbconn.execute("insert into revels.data " +
+        self.dbconn.execute("insert into data " +
                             "(bag_id, type_id, mass, density, height, " +
                             "width, depth) values " +
                             "(%i, %i, %i, %i, %i, %i, %i)",
@@ -177,33 +177,101 @@ class connection:
         revels_data_frame = self.get_revels().drop(columns=['bag_id', 'type_id', 'shop_id', 'data_id']).groupby('type_name')
         for name, group in revels_data_frame:
             logging.info("{}\n{}".format(name, group.describe()))
+        return self.dbconn
 
     def log_results(self, num):
-        results = self.dbconn.execute("SELECT model_name,accuracy_score FROM revels.models "
+        results = self.dbconn.execute("SELECT model_name,accuracy_score FROM models "
                                              "ORDER BY accuracy_score DESC LIMIT {}".format(num))
         model_count = self.dbconn.execute("SELECT count(*) FROM revels.models").next()['count']
         for row in results:
             logging.info("{}: {}%".format(row['model_name'], round(row['accuracy_score'] * 100, 2)))
         logging.info("{} trained models total".format(model_count))
+        return self.dbconn
 
     def write_model_to_db(self, model_name, model, score, metadata):
-
+        """
+        Write a model and its associated metadata to the models table
+        :param model_name: To store in the model_name column
+        :param model: the trained machine learning model
+        :param score: floating point number, generally the sklearn.metrics.accuracy_score() value
+        :param metadata: Metadata (as dict). {"validataion_split": validation_split,
+                                              "validation_seed": validation_seed,
+                                              "confusion_matrix": sklearn.metrics.confusion_matrix(),
+                                              "classification_rep": sklearn.metrics.classification_report()}
+        :return: None
+        """
         model_bytes = io.BytesIO()
         meta_bytes = io.BytesIO()
         pickle.dump(model, model_bytes)
         pickle.dump(metadata, meta_bytes)
+        model_bytes.flush()
+        meta_bytes.flush()
         model_bytes.seek(0)
         meta_bytes.seek(0)
 
-        self.dbconn.execute("INSERT INTO revels.models (model_name, trained_model, accuracy_score, metadata) VALUES "
+        self.dbconn.execute("INSERT INTO models (model_name, trained_model, accuracy_score, metadata) VALUES "
                             "(%s, %s, %s, %s)", model_name, model_bytes.read(), score, meta_bytes.read())
         self.dbconn.execute("COMMIT")
 
     def get_best_model(self):
-        result = self.dbconn.execute("SELECT (model, accuracy_score, metadata) "
-                                     "FROM revels.models ORDER BY accuracy_score DESC LIMIT 1")
-        row = result.next()
-        score = row['accuracy_score']
-        model = pickle.loads(row['trained_model'])
-        meta = pickle.loads(row['metadata'])
-        return model, score, meta
+        """
+        Get the most accurate model and it's metadata from the database.
+        :return: Tuple(model, metadata, accuracy_score, model_name, id)
+        """
+        result = self.dbconn.execute("SELECT trained_model, metadata, accuracy_score, model_name, id "
+                                     "FROM models ORDER BY accuracy_score DESC LIMIT 1").fetchone()
+
+        model_b = io.BytesIO()
+        meta_b = io.BytesIO()
+        model_b.write(result[0])
+        meta_b.write(result[1])
+        model_b.flush()
+        meta_b.flush()
+        model_b.seek(0)
+        meta_b.seek(0)
+        model = pickle.loads(model_b.read())
+        meta = pickle.loads(meta_b.read())
+
+        return model, meta, result[2], result[3], result[4]
+
+    def get_model_by_id(self, model_id):
+        """
+        Get a model by its database index number.
+        :param model_id:
+        :return:Tuple(model, metadata, accuracy_score, model_name)
+        """
+        result = self.dbconn.execute("SELECT trained_model, metadata, accuracy_score, model_name "
+                                     "FROM models WHERE id = {}".format(model_id)).fetchone()
+        model_b = io.BytesIO()
+        model_b.write(result[0])
+        model_b.flush()
+        model_b.seek(0)
+
+        meta_b = io.BytesIO()
+        meta_b.write(result[1])
+        meta_b.flush()
+        meta_b.seek(0)
+        return pickle.loads(model_b.read()), pickle.loads(meta_b.read()), result[2], result[3]
+
+    def get_top_models(self, number):
+        """
+
+        :param number: Number of models to get
+        :return: List of Tuple(model, metadata, accuracy_score, model_name, id)
+        """
+        result = self.dbconn.execute("SELECT trained_model, metadata, accuracy_score, model_name, id "
+                                     "FROM models ORDER BY accuracy_score DESC LIMIT {}".format(number))
+        results = []
+        for row in result:
+            model_b = io.BytesIO()
+            meta_b = io.BytesIO()
+            model_b.write(row[0])
+            meta_b.write(row[1])
+            model_b.flush()
+            meta_b.flush()
+            model_b.seek(0)
+            meta_b.seek(0)
+            model = pickle.loads(model_b.read())
+            meta = pickle.loads(meta_b.read())
+            results.append((model, meta, row[2], row[3], row[4]))
+        return results

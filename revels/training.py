@@ -22,8 +22,9 @@ import dbase
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 class ValidationSplitter:
-    def __init__(self, db_connection, validation_split):
+    def __init__(self, db_connection, validation_split, random_seed):
         """
         :param db_connection: dbase.connection object
         :param validation_split: The amount of data to keep back for validation of training (0.1 = 10% etc.)
@@ -34,34 +35,36 @@ class ValidationSplitter:
         # These 2 statements carve the data_set into 2 DataFrames.
         # X = independant vars (mass, density, height, width, depth)
         # Y = dependant var (revels_type)
-        self.X = self.data_set.iloc[:, 5:]  # From colindex 5 to end of table.
+        self.X = self.data_set.iloc[:, 5:]  # From colindex 5 to end of view.
         self.Y = self.data_set.iloc[:, 4]  # Col 4 only.
 
         # Split data_set into training and validation data.
         self.X_train, self.X_test, self.Y_train, self.Y_test = sklearn.model_selection.train_test_split(
             self.X, self.Y,
             test_size=validation_split,
-            random_state=7)
+            random_state=random_seed)
 
 
 def get_models():
     return [('Logistic_Regression', LogisticRegression()),
-          ('Decision_Tree', DecisionTreeClassifier()),
-          ('K_Nearest_Neighbours', KNeighborsClassifier()),
-          ('Linear_Discriminant', LinearDiscriminantAnalysis()),
-          ('Naive_Bayes', GaussianNB()),
-          ('Support_Vector_Machines', SVC())]
+            ('Decision_Tree', DecisionTreeClassifier()),
+            ('K_Nearest_Neighbours', KNeighborsClassifier()),
+            ('Linear_Discriminant', LinearDiscriminantAnalysis()),
+            ('Naive_Bayes', GaussianNB()),
+            ('Support_Vector_Machines', SVC())]
 
 
-def validate_models(validation_split):
+def validate_models(validation_split, kfold_splits, random_seed):
     """
     Performs cross validation on the models
-    :param data_connection: dbase.connection object
-    :return: None, it prints to stdout.
+    :param validation_split:
+    :param kfold_splits:
+    :param random_seed:
+    :return:
     """
     con = dbase.connection()
-    data = ValidationSplitter(con, float(validation_split))
-    k_fold = sklearn.model_selection.KFold(n_splits=10, random_state=7)
+    data = ValidationSplitter(con, float(validation_split), random_seed)
+    k_fold = sklearn.model_selection.KFold(n_splits=int(kfold_splits), random_state=int(random_seed))
     for name, model in get_models():
         logging.info("Performing cross validation on {}".format(name))
         x_val_score = sklearn.model_selection.cross_val_score(model, data.X_train, data.Y_train,
@@ -72,16 +75,18 @@ def validate_models(validation_split):
     con.get_connection().close()
 
 
-def train_models(validation_split, persist):
+def train_models(validation_split, random_seed, persist):
     con = dbase.connection()
-    data = ValidationSplitter(con, float(validation_split))
     accuracy = []
     confusion = []
     classification = []
     for name, model in get_models():
-        logging.info("Training {}".format(name))
+        logging.debug("Training {}".format(name))
+        data = ValidationSplitter(con, float(validation_split), int(random_seed))
+
+        # Train the model the training data set.
         model.fit(data.X_train, data.Y_train)
-        logging.info("Training complete, performing predictions on validation data")
+        logging.debug("Training complete, performing predictions on validation data")
         predictions = model.predict(data.X_test)
         score = accuracy_score(predictions, data.Y_test)
         confu = confusion_matrix(predictions, data.Y_test)
@@ -92,13 +97,14 @@ def train_models(validation_split, persist):
         if persist:
             con.write_model_to_db(name, model, score,
                                   {"validataion_split": validation_split,
+                                   "validation_seed": random_seed,
                                    "confusion_matrix": confu,
                                    "classification_rep": classi})
 
     for x in confusion:
-        logging.info("Confusion Matrix for {} using validation split {}:\n{}".format(x[0], validation_split, x[1]))
+        logging.debug("Confusion Matrix for {} using validation split {}:\n{}".format(x[0], validation_split, x[1]))
     for x in classification:
-        logging.info("Classification Report for {} validation split {}:\n{}".format(x[0], validation_split, x[1]))
+        logging.debug("Classification Report for {} validation split {}:\n{}".format(x[0], validation_split, x[1]))
     for x in accuracy:
         logging.info("Accuracy Score for {} validation split {}:\n{}".format(x[0], validation_split, x[1]))
 
@@ -106,7 +112,48 @@ def train_models(validation_split, persist):
 
 
 def predict(mass, density, height, width, depth):
+    """
+    Predict using best available model in database.
+    :param mass: The sample mass (in g)
+    :param density: Sample density (g/cm3)
+    :param height: (mm)
+    :param width: (mm)
+    :param depth: (mm)
+    :return: the prediction (type_id) of revel
+    """
     con = dbase.connection()
     model = con.get_best_model()
+    logging.info("Using best available model {} with accuracy score of {}%".format(model[3], round(model[2]*100, 2)))
+    prediction = model[0].predict([[mass, density, height, width, depth]])
+    for x in prediction:
+        logging.debug(x)
+    logging.info("Predicted type_id: {}".format(prediction[0]))
+    revel_type = con.get_connection().execute("SELECT * FROM types WHERE id = {}".format(prediction[0])).fetchone()
+    logging.info(revel_type[1])
     con.get_connection().close()
-    return model.predict([mass, density, height, width, depth])
+    return prediction
+
+
+def predict_with(model_id, mass, density, height, width, depth):
+    """
+    Predict using specific model in database.
+    :param model_id: Specific model to use in predictions.
+    :param mass: The sample mass (in g)
+    :param density: Sample density (g/cm3)
+    :param height: (mm)
+    :param width: (mm)
+    :param depth: (mm)
+    :return: the prediction (type_id) of revel
+    """
+    con = dbase.connection()
+    logging.info("Getting model with id {}".format(model_id))
+    model = con.get_model_by_id(model_id)
+    logging.info("Using model of type: {} with score of {}%".format(model[3], round(model[2]*100, 2)))
+    prediction = model[0].predict([[mass, density, height, width, depth]])
+    for x in prediction:
+        logging.debug(x)
+    logging.info("Predicted type_id: {}".format(prediction[0]))
+    revel_type = con.get_connection().execute("SELECT * FROM types WHERE id = {}".format(prediction[0])).fetchone()
+    logging.info(revel_type[1])
+    con.get_connection().close()
+    return prediction

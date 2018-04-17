@@ -194,7 +194,7 @@ ALTER TABLE types OWNER TO postgres;
 
 --
 -- Name: revels_detail; Type: VIEW; Schema: revels; Owner: postgres
---
+--  *** THIS VIEW IS USED BY THE LEARNING CODE DO NOT REORDER COLS ***
 
 CREATE VIEW revels_detail AS
  SELECT data.id AS data_id,
