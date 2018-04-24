@@ -33,9 +33,12 @@ def predict(model_id):
                  "width = {}"
                  "depth = {}".format(mass, density, height, width, depth))
     if model_id is not None:
-        training.predict_with(model_id, mass, density, height, width, depth)
+        prediction, pred_name = training.predict_with(model_id, mass, density, height, width, depth)
     else:
-        training.predict(mass, density, height, width, depth)
+        prediction, pred_name = training.predict(mass, density, height, width, depth)
+
+    logging.info("Predicted type_id: {}".format(prediction[0]))
+    logging.info("Predicted type: {}".format(pred_name))
 
 
 if __name__ == '__main__':
@@ -49,7 +52,7 @@ if __name__ == '__main__':
 
     elif sys.argv[1] == 'train-models':
         logging.info("Training machine learning models")
-        for val_split in [.15, .18,  .2, .22, .24, .26, .265, .27, .275, .28, .3, .32]:
+        for val_split in [.15, .18, .19, .2, .22, .24, .26, .265, .27, .275, .28, .285, .29, .3, .31, .32]:
             for rand_seed in [3, 5, 7, 9]:
                 logging.info("Training models using validation split of {} and random seed {}"
                              .format(val_split, rand_seed))

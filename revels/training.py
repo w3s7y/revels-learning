@@ -3,7 +3,7 @@
 """
 Created on Mon Mar  6 11:52:41 2017
 
-This module contains the main code to train a model.
+This module contains the main code to train models, predict etc.
 
 @author: ben
 """
@@ -24,10 +24,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class ValidationSplitter:
-    def __init__(self, db_connection, validation_split, random_seed):
+    def __init__(self, db_connection, validation_split, random_state):
         """
         :param db_connection: dbase.connection object
         :param validation_split: The amount of data to keep back for validation of training (0.1 = 10% etc.)
+        :param random_state: The random_state to use in sklearn.model_selection.train_test_split
         """
         self.data_set = db_connection.get_revels()
 
@@ -42,7 +43,7 @@ class ValidationSplitter:
         self.X_train, self.X_test, self.Y_train, self.Y_test = sklearn.model_selection.train_test_split(
             self.X, self.Y,
             test_size=validation_split,
-            random_state=random_seed)
+            random_state=random_state)
 
 
 def get_models():
@@ -76,6 +77,12 @@ def validate_models(validation_split, kfold_splits, random_seed):
 
 
 def train_models(validation_split, random_seed, persist):
+    """
+    :param validation_split: amount of validation data to keep back from training (0.2 = 20%)
+    :param random_seed: random to use on validation split
+    :param persist: boolean value to store trained models in db.
+    :return: None
+    """
     con = dbase.connection()
     accuracy = []
     confusion = []
@@ -84,9 +91,11 @@ def train_models(validation_split, random_seed, persist):
         logging.debug("Training {}".format(name))
         data = ValidationSplitter(con, float(validation_split), int(random_seed))
 
-        # Train the model the training data set.
+        # Train the model on the training data set.
         model.fit(data.X_train, data.Y_train)
         logging.debug("Training complete, performing predictions on validation data")
+
+        # Create predictions on the test (validation) data.
         predictions = model.predict(data.X_test)
         score = accuracy_score(predictions, data.Y_test)
         confu = confusion_matrix(predictions, data.Y_test)
@@ -125,13 +134,11 @@ def predict(mass, density, height, width, depth):
     model = con.get_best_model()
     logging.info("Using best available model {} with accuracy score of {}%".format(model[3], round(model[2]*100, 2)))
     prediction = model[0].predict([[mass, density, height, width, depth]])
-    for x in prediction:
-        logging.debug(x)
-    logging.info("Predicted type_id: {}".format(prediction[0]))
+    logging.debug("Predicted type_id: {}".format(prediction[0]))
     revel_type = con.get_connection().execute("SELECT * FROM types WHERE id = {}".format(prediction[0])).fetchone()
-    logging.info(revel_type[1])
+    logging.debug(revel_type[1])
     con.get_connection().close()
-    return prediction
+    return prediction, revel_type[1]
 
 
 def predict_with(model_id, mass, density, height, width, depth):
@@ -146,14 +153,14 @@ def predict_with(model_id, mass, density, height, width, depth):
     :return: the prediction (type_id) of revel
     """
     con = dbase.connection()
-    logging.info("Getting model with id {}".format(model_id))
+    logging.debug("Getting model with id {}".format(model_id))
     model = con.get_model_by_id(model_id)
-    logging.info("Using model of type: {} with score of {}%".format(model[3], round(model[2]*100, 2)))
+    logging.info("Using model of type: {} with accuracy score of {}%".format(model[3], round(model[2]*100, 2)))
     prediction = model[0].predict([[mass, density, height, width, depth]])
     for x in prediction:
         logging.debug(x)
-    logging.info("Predicted type_id: {}".format(prediction[0]))
+    logging.debug("Predicted type_id: {}".format(prediction[0]))
     revel_type = con.get_connection().execute("SELECT * FROM types WHERE id = {}".format(prediction[0])).fetchone()
-    logging.info(revel_type[1])
+    logging.debug(revel_type[1])
     con.get_connection().close()
-    return prediction
+    return prediction, revel_type[1]

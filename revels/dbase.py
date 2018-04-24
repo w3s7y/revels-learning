@@ -57,7 +57,7 @@ def create_database():
 
     # Drop existing database if requested.
 
-    logging.info("Dropping database {}".format(db_name))
+    logging.debug("Dropping database {}".format(db_name))
     con.execute("commit")
     con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(db_schema))
     con.execute("commit")
@@ -65,7 +65,7 @@ def create_database():
     con.execute("commit")
     con.execute("DROP ROLE IF EXISTS {}".format(db_user))
     con.execute("commit")
-    logging.info("Database {} successfully dropped.".format(db_name))
+    logging.debug("Database {} successfully dropped.".format(db_name))
 
     # Create the application user
     con.execute(sqlalchemy.text("CREATE ROLE {} WITH LOGIN PASSWORD '{}'".format(db_user, db_pass)))
@@ -76,18 +76,18 @@ def create_database():
     con.execute(sqlalchemy.text("CREATE DATABASE {} WITH OWNER = {} TEMPLATE = template0 "
                                 "ENCODING = 'UTF8' ".format(db_name, db_user)))
     con.execute("commit")
-    logging.info("Database {} created.".format(db_name))
+    logging.debug("Database {} created.".format(db_name))
 
     # Disconnect from postgres and reconnect to revels database to create schema
     con.close()
-    logging.info("Connection to database postgres closed.")
+    logging.debug("Connection to database postgres closed, reconnect to {}.".format(db_name))
     engine = sqlalchemy.create_engine('postgresql+psycopg2://{}:{}@{}:{}/{}'.format(db_adm_usr, db_adm_pass, db_host,
                                                                                     db_port, db_name))
     con = engine.connect()
-    logging.info("Connection to {} as {} established, creating schema...".format(db_name, db_adm_usr))
+    logging.debug("Connection to {} as {} established, creating schema...".format(db_name, db_adm_usr))
 
     # Create the schema.
-    logging.info("Creating tables, ACLs and performing data load.")
+    logging.info("Creating tables, ACLs and performing initial data load.")
     con.execute(open('sql/db.sql', 'r').read())
     con.execute("commit")
 
@@ -106,15 +106,24 @@ class connection:
         self.engine = sqlalchemy.create_engine(connect_str)
         self.dbconn = self.engine.connect()
         self.dbconn.execute("SET search_path = {}, pg_catalog".format(db_schema))
-        self.dbconn.execute("commit")
-
+        self.dbconn.execute("COMMIT")
 
     def get_connection(self):
-        '''Returns the raw sqlalchemy datbase connection.'''
+        """
+        :return: sqlalchemy.connection
+        """
         return self.dbconn
 
     def write_shop(self, shop_name, address1, address2, address3, postcode):
-        '''Write a shop to the DB.'''
+        """
+
+        :param shop_name:
+        :param address1:
+        :param address2:
+        :param address3:
+        :param postcode:
+        :return: None
+        """
         self.dbconn.execute('insert into shops (shop_name,' +
                             'address_1, address_2, address_3, postcode) ' +
                             'values (%s, %s, %s, %s, %s)',
@@ -123,19 +132,37 @@ class connection:
                             address2,
                             address3,
                             postcode)
+        self.dbconn.execute("COMMIT")
 
     def write_bag(self, shop_id, mass, price):
-        '''Write a bag to the DB.'''
+        """
+
+        :param shop_id:
+        :param mass:
+        :param price:
+        :return: None
+        """
         self.dbconn.execute("insert into bags " +
                             "(shop_bought, total_mass, price) " +
                             "values (%s, %s, %s)",
                             shop_id,
                             mass,
                             price)
+        self.dbconn.execute("COMMIT")
 
     def write_sample(self,
                      bag_id, type_id, mass, density, height, width, depth):
-        '''Write a row of sample data to the DB.'''
+        """
+
+        :param bag_id:
+        :param type_id:
+        :param mass:
+        :param density:
+        :param height:
+        :param width:
+        :param depth:
+        :return:
+        """
         self.dbconn.execute("insert into data " +
                             "(bag_id, type_id, mass, density, height, " +
                             "width, depth) values " +
@@ -147,39 +174,64 @@ class connection:
                             height,
                             width,
                             depth)
+        self.dbconn.execute("COMMIT")
 
     def get_shops(self):
-        '''Returns a pandas DataFrame of the shops table.'''
+        """
+
+        :return:
+        """
         return pandas.read_sql_table('shops', self.dbconn,
                                      schema=db_schema)
 
     def get_bags(self):
-        '''Returns a pandas DataFrame of the bags table.'''
+        """
+
+        :return:
+        """
         return pandas.read_sql_table('bags', self.dbconn,
                                      schema=db_schema)
 
     def get_types(self):
-        '''Returns a pandas DataFrame of the types table.'''
+        """
+
+        :return:
+        """
         return pandas.read_sql_table('types', self.dbconn,
                                      schema=db_schema)
 
     def get_samples(self):
-        '''Returns a pandas DataFrame of the data table.'''
+        """
+
+        :return:
+        """
         return pandas.read_sql_table('data', self.dbconn,
                                      schema=db_schema)
 
     def get_revels(self):
-        '''Returns the pandas object of the revels_detail view.'''
+        """
+
+        :return:
+        """
         return pandas.read_sql_table('revels_detail', self.dbconn,
                                      schema=db_schema)
 
     def log_summary(self):
+        """
+
+        :return:
+        """
         revels_data_frame = self.get_revels().drop(columns=['bag_id', 'type_id', 'shop_id', 'data_id']).groupby('type_name')
         for name, group in revels_data_frame:
             logging.info("{}\n{}".format(name, group.describe()))
         return self.dbconn
 
     def log_results(self, num):
+        """
+
+        :param num:
+        :return:
+        """
         results = self.dbconn.execute("SELECT model_name,accuracy_score FROM models "
                                              "ORDER BY accuracy_score DESC LIMIT {}".format(num))
         model_count = self.dbconn.execute("SELECT count(*) FROM revels.models").next()['count']
@@ -237,7 +289,7 @@ class connection:
     def get_model_by_id(self, model_id):
         """
         Get a model by its database index number.
-        :param model_id:
+        :param model_id: the id of the model in the database
         :return:Tuple(model, metadata, accuracy_score, model_name)
         """
         result = self.dbconn.execute("SELECT trained_model, metadata, accuracy_score, model_name "
@@ -255,7 +307,7 @@ class connection:
 
     def get_top_models(self, number):
         """
-
+        Get a list of the top number of trained models
         :param number: Number of models to get
         :return: List of Tuple(model, metadata, accuracy_score, model_name, id)
         """
